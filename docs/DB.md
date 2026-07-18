@@ -47,7 +47,7 @@ Represents a paying customer (solar-panel company).
 | `phone` | `text` | nullable | |
 | `slug` | `text` | unique, not null | Used for embed/white-label URL |
 | `subscription_status` | `text` | not null, default `'trial'` | `trial` \| `active` \| `past_due` \| `canceled` |
-| `stripe_customer_id` | `text` | nullable | Phase 2 billing |
+| `paypal_subscription_id` | `text` | nullable | Phase 2 billing (PayPal — Stripe not available in Kosovo) |
 | `created_at` | `timestamptz` | not null, default `now()` | |
 | `updated_at` | `timestamptz` | not null, default `now()` | |
 
@@ -125,7 +125,7 @@ create table installers (
   phone text,
   slug text unique not null,
   subscription_status text not null default 'trial',
-  stripe_customer_id text,
+  paypal_subscription_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

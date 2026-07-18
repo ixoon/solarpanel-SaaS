@@ -12,8 +12,10 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { LeadQuoteForm } from "@/components/calculator/LeadQuoteForm"
 import { Separator } from "@/components/ui/separator"
 import { getCityById } from "@/lib/geo/cities"
+import type { LeadContact } from "@/lib/leads/types"
 import type {
   CalculationResult,
   CalculatorInput,
@@ -89,6 +91,34 @@ export function Results({ input, location, onBack }: ResultsProps) {
     fetchResults()
   }, [fetchResults])
 
+  async function handleLeadSubmit(contact: LeadContact) {
+    if (!result) return
+
+    const response = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...contact,
+        city: input.city,
+        address: input.address,
+        lat: location.lat,
+        lon: location.lon,
+        monthlyBillEur: input.monthlyBillEur,
+        systemSizeKw: result.systemSizeKw,
+        annualProductionKwh: result.annualProductionKwh,
+        annualSavingsEur: result.annualSavingsEur,
+        paybackYears: result.paybackYears,
+        co2SavedKg: result.co2SavedKg,
+      }),
+    })
+
+    const data = (await response.json()) as { error?: string }
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "Could not save your request.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
@@ -161,6 +191,10 @@ export function Results({ input, location, onBack }: ResultsProps) {
           value={`${result.systemSizeKw.toFixed(1)} kW`}
         />
       </div>
+
+      <Separator />
+
+      <LeadQuoteForm onSubmit={handleLeadSubmit} />
 
       <Separator />
 
