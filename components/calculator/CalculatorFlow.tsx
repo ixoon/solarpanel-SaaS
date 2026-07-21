@@ -20,7 +20,11 @@ import type {
   ConfirmedLocation,
 } from "@/lib/solar/types"
 
-export function CalculatorFlow() {
+type CalculatorFlowProps = {
+  installerSlug?: string
+}
+
+export function CalculatorFlow({ installerSlug }: CalculatorFlowProps) {
   const [step, setStep] = useState<CalculatorStep>("input")
   const [input, setInput] = useState<CalculatorInput | null>(null)
   const [location, setLocation] = useState<ConfirmedLocation | null>(null)
@@ -33,6 +37,12 @@ export function CalculatorFlow() {
   function handleLocationConfirm(confirmed: ConfirmedLocation) {
     setLocation(confirmed)
     setStep("results")
+  }
+
+  function handleStartOver() {
+    setStep("input")
+    setInput(null)
+    setLocation(null)
   }
 
   return (
@@ -64,7 +74,9 @@ export function CalculatorFlow() {
           <Results
             input={input}
             location={location}
+            installerSlug={installerSlug}
             onBack={() => setStep("map")}
+            onStartOver={handleStartOver}
           />
         )}
       </CardContent>

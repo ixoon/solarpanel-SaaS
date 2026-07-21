@@ -25,7 +25,9 @@ import type {
 type ResultsProps = {
   input: CalculatorInput
   location: ConfirmedLocation
+  installerSlug?: string
   onBack: () => void
+  onStartOver: () => void
 }
 
 function formatEur(value: number): string {
@@ -51,7 +53,13 @@ function formatCo2(kg: number): string {
   return `${Math.round(kg).toLocaleString("en-IE")} kg`
 }
 
-export function Results({ input, location, onBack }: ResultsProps) {
+export function Results({
+  input,
+  location,
+  installerSlug,
+  onBack,
+  onStartOver,
+}: ResultsProps) {
   const city = getCityById(input.city)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +117,7 @@ export function Results({ input, location, onBack }: ResultsProps) {
         annualSavingsEur: result.annualSavingsEur,
         paybackYears: result.paybackYears,
         co2SavedKg: result.co2SavedKg,
+        installerSlug,
       }),
     })
 
@@ -148,8 +157,11 @@ export function Results({ input, location, onBack }: ResultsProps) {
             <ArrowLeft data-icon="inline-start" />
             Back to map
           </Button>
-          <Button className="flex-1" onClick={fetchResults}>
+          <Button variant="secondary" className="flex-1" onClick={onStartOver}>
             <RotateCcw data-icon="inline-start" />
+            Start over
+          </Button>
+          <Button className="flex-1" onClick={fetchResults}>
             Try again
           </Button>
         </div>
@@ -204,10 +216,16 @@ export function Results({ input, location, onBack }: ResultsProps) {
         data and default Kosovo market assumptions — not a formal quote.
       </p>
 
-      <Button variant="outline" onClick={onBack}>
-        <ArrowLeft data-icon="inline-start" />
-        Back to map
-      </Button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Button variant="outline" onClick={onBack}>
+          <ArrowLeft data-icon="inline-start" />
+          Back to map
+        </Button>
+        <Button variant="secondary" className="flex-1" onClick={onStartOver}>
+          <RotateCcw data-icon="inline-start" />
+          Start over
+        </Button>
+      </div>
     </div>
   )
 }

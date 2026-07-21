@@ -15,5 +15,6 @@ export type LeadPayload = LeadContact & {
   annualSavingsEur: number
   paybackYears: number
   co2SavedKg: number
-  installerId?: string
+  /** Public installer slug; the server resolves it to an installer_id. */
+  installerSlug?: string
 }

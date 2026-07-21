@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 
 import type { LeadPayload } from "@/lib/leads/types"
 import { getCityById } from "@/lib/geo/cities"
-import { sendLeadNotificationEmail } from "@/lib/email/send-lead-notification"
+import { getInstallerBySlug } from "@/lib/installers/get-by-slug"
+import {
+  resolveLeadNotificationRecipients,
+  sendLeadNotificationEmail,
+} from "@/lib/email/send-lead-notification"
 import { createClient } from "@/lib/supabase/server"
 
 function parseLeadBody(body: Partial<LeadPayload>) {
@@ -20,7 +24,7 @@ function parseLeadBody(body: Partial<LeadPayload>) {
     annualSavingsEur,
     paybackYears,
     co2SavedKg,
-    installerId,
+    installerSlug,
   } = body
 
   if (
@@ -52,7 +56,7 @@ function parseLeadBody(body: Partial<LeadPayload>) {
     return null
   }
 
-  if (installerId !== undefined && typeof installerId !== "string") {
+  if (installerSlug !== undefined && typeof installerSlug !== "string") {
     return null
   }
 
@@ -70,7 +74,10 @@ function parseLeadBody(body: Partial<LeadPayload>) {
     annualSavingsEur,
     paybackYears,
     co2SavedKg,
-    installerId: installerId ?? null,
+    installerSlug:
+      typeof installerSlug === "string" && installerSlug.trim()
+        ? installerSlug.trim()
+        : null,
   }
 }
 
@@ -95,10 +102,25 @@ export async function POST(request: NextRequest) {
   const cityRecord = getCityById(input.city)
   const cityName = cityRecord?.name ?? input.city
 
+  let installerId: string | null = null
+  let installerContactEmail: string | null = null
+  let installerCompanyName: string | undefined
+
+  if (input.installerSlug) {
+    const installer = await getInstallerBySlug(input.installerSlug)
+    installerId = installer?.id ?? null
+    installerContactEmail = installer?.contactEmail ?? null
+    installerCompanyName = installer?.companyName
+  }
+
+  const notificationRecipients = resolveLeadNotificationRecipients(
+    installerContactEmail
+  )
+
   const supabase = await createClient()
 
   const { error } = await supabase.from("leads").insert({
-      installer_id: input.installerId,
+      installer_id: installerId,
       full_name: input.fullName,
       phone: input.phone,
       email: input.email,
@@ -123,21 +145,27 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await sendLeadNotificationEmail({
-      fullName: input.fullName,
-      phone: input.phone,
-      email: input.email,
-      city: cityName,
-      address: input.address,
-      lat: input.lat,
-      lon: input.lon,
-      monthlyBillEur: input.monthlyBillEur,
-      systemSizeKw: input.systemSizeKw,
-      annualProductionKwh: input.annualProductionKwh,
-      annualSavingsEur: input.annualSavingsEur,
-      paybackYears: input.paybackYears,
-      co2SavedKg: input.co2SavedKg,
-    })
+    await sendLeadNotificationEmail(
+      {
+        fullName: input.fullName,
+        phone: input.phone,
+        email: input.email,
+        city: cityName,
+        address: input.address,
+        lat: input.lat,
+        lon: input.lon,
+        monthlyBillEur: input.monthlyBillEur,
+        systemSizeKw: input.systemSizeKw,
+        annualProductionKwh: input.annualProductionKwh,
+        annualSavingsEur: input.annualSavingsEur,
+        paybackYears: input.paybackYears,
+        co2SavedKg: input.co2SavedKg,
+      },
+      {
+        toEmails: notificationRecipients,
+        installerCompanyName,
+      }
+    )
   } catch (emailError) {
     console.error(
       "Lead email failed:",
